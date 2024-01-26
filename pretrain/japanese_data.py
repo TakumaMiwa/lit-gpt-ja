@@ -21,8 +21,8 @@ from lit_gpt.model import GPT, Block, Config
 from lit_gpt.packed_dataset import CombinedDataset, PackedDataset
 from lit_gpt.utils import chunked_cross_entropy, estimate_flops, get_default_supported_precision, num_parameters
 
-model_name = "Llama-2-7b-hf"
-name = "redpajama"
+model_name = "stablelm-base-alpha-3b"
+name = "fastlabelLM"
 out_dir = Path("out") / name
 save_interval = 1000
 eval_interval = 1000
@@ -46,15 +46,17 @@ lr_decay_iters = max_iters
 min_lr = 6e-5
 
 
-# Data proportions from https://arxiv.org/pdf/2302.13971.pdf Table 1
-data_config = [
-    ("arxiv", 2.5),
-    ("book", 4.5),
-    ("c4", 15.0),
-    ("cc", 67.0),
-    ("github", 4.5),
-    ("stackexchange", 2.0),
-    ("wikipedia", 4.5),
+val_data_config = [
+    # ("aozorabunko-clean-sin", 1.0),
+    ("wikinews-ja-20230728", 1.0),
+    # ("wikinews-en-20230728", 1.0),
+]
+train_data_config = [
+    ('wikipedia-ja-20230720', 1.0),
+    # ('wikipedia-en-20230720', 1.0),
+    # ('open-text-books', 1.0),
+    # ('oscar_2023_filtered', 1.0),
+    ('aozorabunko-clean-sin',1.0)
 ]
 
 hparams = {k: v for k, v in locals().items() if isinstance(v, (int, float, str)) and not k.startswith("_")}
@@ -62,8 +64,8 @@ logger = CSVLogger("out", name, flush_logs_every_n_steps=log_interval)
 
 
 def setup(
-    devices: int = 4,
-    train_data_dir: Path = Path("data/redpajama_sample"),
+    devices: int = 1,
+    train_data_dir: Path = Path("data/ja_data"),
     val_data_dir: Optional[Path] = None,
     precision: Optional[str] = None,
     resume: Union[bool, Path] = False,
@@ -84,12 +86,11 @@ def setup(
     fabric = L.Fabric(devices=devices, strategy=strategy, precision=precision, loggers=logger)
     fabric.print(hparams)
     fabric.launch(main, train_data_dir, val_data_dir, resume)
-
+import sys
 
 def main(fabric: L.Fabric, train_data_dir: Path, val_data_dir: Path, resume: Union[bool, Path]) -> None:
     if fabric.global_rank == 0:
         out_dir.mkdir(parents=True, exist_ok=True)
-
     config = Config.from_name(model_name)
 
     train_dataloader, val_dataloader = create_dataloaders(
@@ -237,7 +238,7 @@ def validate(fabric: L.Fabric, model: torch.nn.Module, val_dataloader: DataLoade
 
 
 def create_dataloader(
-    batch_size: int, block_size: int, data_dir: Path, fabric: L.Fabric, shuffle: bool = True, seed: int = 12345
+    batch_size: int, block_size: int, data_dir: Path, data_config: str, fabric: L.Fabric, shuffle: bool = True, seed: int = 12345
 ) -> DataLoader:
     datasets = []
     for prefix, _ in data_config:
@@ -275,7 +276,7 @@ def create_dataloaders(
     batch_size: int,
     block_size: int,
     fabric: L.Fabric,
-    train_data_dir: Path = Path("data/redpajama_sample"),
+    train_data_dir: Path = Path("data/ja_data"),
     val_data_dir: Optional[Path] = None,
     seed: int = 12345,
 ) -> Tuple[DataLoader, DataLoader]:
@@ -286,6 +287,7 @@ def create_dataloaders(
         block_size=effective_block_size,
         fabric=fabric,
         data_dir=train_data_dir,
+        data_config=train_data_config,
         shuffle=True,
         seed=seed,
     )
@@ -295,6 +297,7 @@ def create_dataloaders(
             block_size=effective_block_size,
             fabric=fabric,
             data_dir=val_data_dir,
+            data_config=val_data_config,
             shuffle=False,
             seed=seed,
         )
