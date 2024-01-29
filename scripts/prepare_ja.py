@@ -36,12 +36,8 @@ def format_number(num):
     else:
         return str(num)
 
-def prepare_for_dataset(
-    dataset_ids: list[str],
-    tokenizer_path: Path,
-    destination_path: Path,
-    chunk_size: int,
-) -> None:
+def prepare_for_dataset(dataset_ids, tokenizer_path, destination_path, chunk_size):
+
     destination_path.mkdir(parents=True, exist_ok=True)
     tokenizer = Tokenizer(tokenizer_path)
 
@@ -76,13 +72,13 @@ def prepare_for_dataset(
         print('tokens ', format_number(token_cnt))
         total_token_cnt += token_cnt
     print('total tokens', format_number(total_token_cnt))
-    
+
 def prepare(
     dataset_ids = sample_ids,
     tokenizer_path: Path = Path("checkpoints/stabilityai/stablelm-base-alpha-3b"),
     destination_path: Path = Path("data/ja_data"),
     chunk_size: int = 2049 * 1024,  # 2048 block size + 1 for causal (from LLama), 1024 blocks
-    sample: bool = False    
+    sample: bool = False
 ) -> None: 
     prepare_for_dataset(
         dataset_ids=dataset_ids,
