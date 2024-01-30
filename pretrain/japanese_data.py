@@ -24,7 +24,7 @@ from lit_gpt.utils import chunked_cross_entropy, estimate_flops, get_default_sup
 model_name = "stablelm-base-alpha-3b"
 name = "fastlabelLM"
 out_dir = Path("out") / name
-save_interval = 1000
+save_interval = 500
 eval_interval = 1000
 eval_iters = 100
 log_interval = 1
@@ -78,7 +78,7 @@ def setup(
             activation_checkpointing_policy={Block},
             state_dict_type="full",
             limit_all_gathers=True,
-            cpu_offload=False,
+            cpu_offload=True,
         )
     else:
         strategy = "auto"
