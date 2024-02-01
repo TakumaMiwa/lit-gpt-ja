@@ -16,7 +16,7 @@ from scripts.convert_lit_checkpoint import convert_lit_checkpoint
 from transformers import GPTNeoXConfig, AutoModelForCausalLM
 from huggingface_hub import login
 
-login(token='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')
+login(token='')
 
 def convert_config(config_path):
     t_config = GPTNeoXConfig()
